@@ -16,7 +16,7 @@ import { useTriggerConfigAggregation } from '@/hooks/use-trigger-config-aggregat
 import { useWebhookManagement } from '@/hooks/use-webhook-management'
 import { useSubBlockStore } from '@/stores/workflows/subblock/store'
 import { getTrigger, isTriggerValid } from '@/triggers'
-import { SYSTEM_SUBBLOCK_IDS } from '@/triggers/consts'
+import { SYSTEM_SUBBLOCK_IDS } from '@/triggers/constants'
 import { ShortInput } from '../short-input/short-input'
 
 const logger = createLogger('TriggerSave')
@@ -452,7 +452,7 @@ export function TriggerSave({
       )}
 
       <Modal open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <ModalContent className='w-[400px]'>
+        <ModalContent size='sm'>
           <ModalHeader>Delete Trigger</ModalHeader>
           <ModalBody>
             <p className='text-[12px] text-[var(--text-tertiary)]'>

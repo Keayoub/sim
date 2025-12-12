@@ -84,7 +84,6 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Build filter conditions
     const filters = {
       workspaceId: params.workspaceId,
       workflowIds: params.workflowIds?.split(',').filter(Boolean),
@@ -112,6 +111,7 @@ export async function GET(request: NextRequest) {
         id: workflowExecutionLogs.id,
         workflowId: workflowExecutionLogs.workflowId,
         executionId: workflowExecutionLogs.executionId,
+        deploymentVersionId: workflowExecutionLogs.deploymentVersionId,
         level: workflowExecutionLogs.level,
         trigger: workflowExecutionLogs.trigger,
         startedAt: workflowExecutionLogs.startedAt,
@@ -162,6 +162,7 @@ export async function GET(request: NextRequest) {
         id: log.id,
         workflowId: log.workflowId,
         executionId: log.executionId,
+        deploymentVersionId: log.deploymentVersionId,
         level: log.level,
         trigger: log.trigger,
         startedAt: log.startedAt.toISOString(),

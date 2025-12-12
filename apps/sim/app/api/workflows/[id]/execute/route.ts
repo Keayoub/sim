@@ -395,8 +395,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       triggerType: loggingTriggerType,
       executionId,
       requestId,
-      checkRateLimit: false, // Manual executions bypass rate limits
-      checkDeployment: !shouldUseDraftState, // Check deployment unless using draft
+      checkDeployment: !shouldUseDraftState,
       loggingSession,
     })
 
@@ -431,6 +430,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       edges: any[]
       loops: Record<string, any>
       parallels: Record<string, any>
+      deploymentVersionId?: string
     } | null = null
 
     let processedInput = input
@@ -445,6 +445,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           edges: workflowData.edges,
           loops: workflowData.loops || {},
           parallels: workflowData.parallels || {},
+          deploymentVersionId:
+            !shouldUseDraftState && 'deploymentVersionId' in workflowData
+              ? (workflowData.deploymentVersionId as string)
+              : undefined,
         }
 
         const serializedWorkflow = new Serializer().serializeWorkflow(

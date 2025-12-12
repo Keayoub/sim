@@ -1,5 +1,5 @@
 import { createLogger } from '@/lib/logs/console/logger'
-import { BlockType } from '@/executor/consts'
+import { BlockType } from '@/executor/constants'
 import type { DAG } from '@/executor/dag/builder'
 import type { EdgeManager } from '@/executor/execution/edge-manager'
 import { serializePauseSnapshot } from '@/executor/execution/snapshot-serializer'
@@ -279,6 +279,14 @@ export class ExecutionEngine {
     })
 
     this.addMultipleToQueue(readyNodes)
+
+    // Check for dynamically added nodes (e.g., from parallel expansion)
+    if (this.context.pendingDynamicNodes && this.context.pendingDynamicNodes.length > 0) {
+      const dynamicNodes = this.context.pendingDynamicNodes
+      this.context.pendingDynamicNodes = []
+      logger.info('Adding dynamically expanded parallel nodes', { dynamicNodes })
+      this.addMultipleToQueue(dynamicNodes)
+    }
   }
 
   private buildPausedResult(startTime: number): ExecutionResult {

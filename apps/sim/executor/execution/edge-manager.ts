@@ -1,5 +1,5 @@
 import { createLogger } from '@/lib/logs/console/logger'
-import { EDGE } from '@/executor/consts'
+import { EDGE } from '@/executor/constants'
 import type { DAG, DAGNode } from '@/executor/dag/builder'
 import type { DAGEdge } from '@/executor/dag/types'
 import type { NormalizedBlockOutput } from '@/executor/types'
@@ -84,6 +84,27 @@ export class EdgeManager {
 
   clearDeactivatedEdges(): void {
     this.deactivatedEdges.clear()
+  }
+
+  /**
+   * Clear deactivated edges for a set of nodes (used when restoring loop state for next iteration).
+   * This ensures error/success edges can be re-evaluated on each iteration.
+   */
+  clearDeactivatedEdgesForNodes(nodeIds: Set<string>): void {
+    const edgesToRemove: string[] = []
+    for (const edgeKey of this.deactivatedEdges) {
+      // Edge key format is "sourceId-targetId-handle"
+      // Check if either source or target is in the nodeIds set
+      for (const nodeId of nodeIds) {
+        if (edgeKey.startsWith(`${nodeId}-`) || edgeKey.includes(`-${nodeId}-`)) {
+          edgesToRemove.push(edgeKey)
+          break
+        }
+      }
+    }
+    for (const edgeKey of edgesToRemove) {
+      this.deactivatedEdges.delete(edgeKey)
+    }
   }
 
   private shouldActivateEdge(edge: DAGEdge, output: NormalizedBlockOutput): boolean {
@@ -180,7 +201,7 @@ export class EdgeManager {
       const sourceNode = this.dag.nodes.get(sourceId)
       if (!sourceNode) continue
 
-      for (const [_, edge] of sourceNode.outgoingEdges) {
+      for (const [, edge] of sourceNode.outgoingEdges) {
         if (edge.target === node.id) {
           const edgeKey = this.createEdgeKey(sourceId, edge.target, edge.sourceHandle)
           if (!this.deactivatedEdges.has(edgeKey)) {

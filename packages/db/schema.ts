@@ -17,7 +17,7 @@ import {
   uuid,
   vector,
 } from 'drizzle-orm/pg-core'
-import { DEFAULT_FREE_CREDITS, TAG_SLOTS } from './consts'
+import { DEFAULT_FREE_CREDITS, TAG_SLOTS } from './constants'
 
 // Custom tsvector type for full-text search
 export const tsvector = customType<{
@@ -87,6 +87,11 @@ export const account = pgTable(
     accountProviderIdx: index('idx_account_on_account_id_provider_id').on(
       table.accountId,
       table.providerId
+    ),
+    uniqueUserProviderAccount: uniqueIndex('account_user_provider_account_unique').on(
+      table.userId,
+      table.providerId,
+      table.accountId
     ),
   })
 )
@@ -288,6 +293,10 @@ export const workflowExecutionLogs = pgTable(
     stateSnapshotId: text('state_snapshot_id')
       .notNull()
       .references(() => workflowExecutionSnapshots.id),
+    deploymentVersionId: text('deployment_version_id').references(
+      () => workflowDeploymentVersion.id,
+      { onDelete: 'set null' }
+    ),
 
     level: text('level').notNull(), // 'info', 'error'
     trigger: text('trigger').notNull(), // 'api', 'webhook', 'schedule', 'manual', 'chat'
@@ -305,6 +314,9 @@ export const workflowExecutionLogs = pgTable(
     workflowIdIdx: index('workflow_execution_logs_workflow_id_idx').on(table.workflowId),
     stateSnapshotIdIdx: index('workflow_execution_logs_state_snapshot_id_idx').on(
       table.stateSnapshotId
+    ),
+    deploymentVersionIdIdx: index('workflow_execution_logs_deployment_version_id_idx').on(
+      table.deploymentVersionId
     ),
     triggerIdx: index('workflow_execution_logs_trigger_idx').on(table.trigger),
     levelIdx: index('workflow_execution_logs_level_idx').on(table.level),
@@ -627,6 +639,11 @@ export const marketplace = pgTable('marketplace', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
+export const billingBlockedReasonEnum = pgEnum('billing_blocked_reason', [
+  'payment_failed',
+  'dispute',
+])
+
 export const userStats = pgTable('user_stats', {
   id: text('id').primaryKey(),
   userId: text('user_id')
@@ -648,6 +665,8 @@ export const userStats = pgTable('user_stats', {
   billedOverageThisPeriod: decimal('billed_overage_this_period').notNull().default('0'), // Amount of overage already billed via threshold billing
   // Pro usage snapshot when joining a team (to prevent double-billing)
   proPeriodCostSnapshot: decimal('pro_period_cost_snapshot').default('0'), // Snapshot of Pro usage when joining team
+  // Pre-purchased credits (for Pro users only)
+  creditBalance: decimal('credit_balance').notNull().default('0'),
   // Copilot usage tracking
   totalCopilotCost: decimal('total_copilot_cost').notNull().default('0'),
   currentPeriodCopilotCost: decimal('current_period_copilot_cost').notNull().default('0'),
@@ -658,6 +677,7 @@ export const userStats = pgTable('user_stats', {
   storageUsedBytes: bigint('storage_used_bytes', { mode: 'number' }).notNull().default(0),
   lastActive: timestamp('last_active').notNull().defaultNow(),
   billingBlocked: boolean('billing_blocked').notNull().default(false),
+  billingBlockedReason: billingBlockedReasonEnum('billing_blocked_reason'),
 })
 
 export const customTools = pgTable(
@@ -710,15 +730,11 @@ export const subscription = pgTable(
   })
 )
 
-export const userRateLimits = pgTable('user_rate_limits', {
-  referenceId: text('reference_id').primaryKey(), // Can be userId or organizationId for pooling
-  syncApiRequests: integer('sync_api_requests').notNull().default(0), // Sync API requests counter
-  asyncApiRequests: integer('async_api_requests').notNull().default(0), // Async API requests counter
-  apiEndpointRequests: integer('api_endpoint_requests').notNull().default(0), // External API endpoint requests counter
-  windowStart: timestamp('window_start').notNull().defaultNow(),
-  lastRequestAt: timestamp('last_request_at').notNull().defaultNow(),
-  isRateLimited: boolean('is_rate_limited').notNull().default(false),
-  rateLimitResetAt: timestamp('rate_limit_reset_at'),
+export const rateLimitBucket = pgTable('rate_limit_bucket', {
+  key: text('key').primaryKey(),
+  tokens: decimal('tokens').notNull(),
+  lastRefillAt: timestamp('last_refill_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
 export const chat = pgTable(
@@ -765,6 +781,7 @@ export const organization = pgTable('organization', {
   orgUsageLimit: decimal('org_usage_limit'),
   storageUsedBytes: bigint('storage_used_bytes', { mode: 'number' }).notNull().default(0),
   departedMemberUsage: decimal('departed_member_usage').notNull().default('0'),
+  creditBalance: decimal('credit_balance').notNull().default('0'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

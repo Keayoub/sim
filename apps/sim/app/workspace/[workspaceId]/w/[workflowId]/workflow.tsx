@@ -40,7 +40,7 @@ import {
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks'
 import { useSocket } from '@/app/workspace/providers/socket-provider'
 import { getBlock } from '@/blocks'
-import { isAnnotationOnlyBlock } from '@/executor/consts'
+import { isAnnotationOnlyBlock } from '@/executor/constants'
 import { useWorkspaceEnvironment } from '@/hooks/queries/environment'
 import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
 import { useStreamCleanup } from '@/hooks/use-stream-cleanup'
@@ -1295,14 +1295,18 @@ const WorkflowContent = React.memo(() => {
       return
     }
 
+    // Check if we encountered an error loading this specific workflow to prevent infinite retries
+    const hasLoadError = hydration.phase === 'error' && hydration.workflowId === currentId
+
     // Check if we need to load the workflow state:
     // 1. Different workflow than currently active
     // 2. Same workflow but hydration phase is not 'ready' (e.g., after a quick refresh)
     const needsWorkflowLoad =
-      activeWorkflowId !== currentId ||
-      (activeWorkflowId === currentId &&
-        hydration.phase !== 'ready' &&
-        hydration.phase !== 'state-loading')
+      !hasLoadError &&
+      (activeWorkflowId !== currentId ||
+        (activeWorkflowId === currentId &&
+          hydration.phase !== 'ready' &&
+          hydration.phase !== 'state-loading'))
 
     if (needsWorkflowLoad) {
       const { clearDiff } = useWorkflowDiffStore.getState()
@@ -2223,11 +2227,11 @@ const WorkflowContent = React.memo(() => {
 
   if (showSkeletonUI) {
     return (
-      <div className='flex h-screen w-full flex-col overflow-hidden'>
+      <div className='flex h-full w-full flex-col overflow-hidden'>
         <div className='relative h-full w-full flex-1 transition-all duration-200'>
           <div className='workflow-container flex h-full items-center justify-center'>
             <div className='flex flex-col items-center gap-3'>
-              <Loader2 className='h-[24px] w-[24px] animate-spin text-muted-foreground' />
+              <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
             </div>
           </div>
         </div>
@@ -2238,7 +2242,7 @@ const WorkflowContent = React.memo(() => {
   }
 
   return (
-    <div className='flex h-screen w-full flex-col overflow-hidden'>
+    <div className='flex h-full w-full flex-col overflow-hidden'>
       <div className='relative h-full w-full flex-1 transition-all duration-200'>
         {/* Training Controls - for recording workflow edits */}
         <TrainingControls />
