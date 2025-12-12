@@ -74,10 +74,12 @@ const validateEmailField = (emailValue: string): string[] => {
 function SignupFormContent({
   githubAvailable,
   googleAvailable,
+  microsoftAvailable,
   isProduction,
 }: {
   githubAvailable: boolean
   googleAvailable: boolean
+  microsoftAvailable: boolean
   isProduction: boolean
 }) {
   const router = useRouter()
@@ -530,7 +532,7 @@ function SignupFormContent({
       {(() => {
         const ssoEnabled = isTruthy(getEnv('NEXT_PUBLIC_SSO_ENABLED'))
         const emailEnabled = !isFalsy(getEnv('NEXT_PUBLIC_EMAIL_PASSWORD_SIGNUP_ENABLED'))
-        const hasSocial = githubAvailable || googleAvailable
+        const hasSocial = githubAvailable || googleAvailable || microsoftAvailable
         const hasOnlySSO = ssoEnabled && !emailEnabled && !hasSocial
         const showBottomSection = hasSocial || (ssoEnabled && !hasOnlySSO)
         const showDivider = (emailEnabled || hasOnlySSO) && showBottomSection
@@ -549,7 +551,7 @@ function SignupFormContent({
       {(() => {
         const ssoEnabled = isTruthy(getEnv('NEXT_PUBLIC_SSO_ENABLED'))
         const emailEnabled = !isFalsy(getEnv('NEXT_PUBLIC_EMAIL_PASSWORD_SIGNUP_ENABLED'))
-        const hasSocial = githubAvailable || googleAvailable
+        const hasSocial = githubAvailable || googleAvailable || microsoftAvailable
         const hasOnlySSO = ssoEnabled && !emailEnabled && !hasSocial
         const showBottomSection = hasSocial || (ssoEnabled && !hasOnlySSO)
         return showBottomSection
@@ -563,6 +565,7 @@ function SignupFormContent({
           <SocialLoginButtons
             githubAvailable={githubAvailable}
             googleAvailable={googleAvailable}
+            microsoftAvailable={microsoftAvailable}
             callbackURL={redirectUrl || '/workspace'}
             isProduction={isProduction}
           >
@@ -616,10 +619,12 @@ function SignupFormContent({
 export default function SignupPage({
   githubAvailable,
   googleAvailable,
+  microsoftAvailable,
   isProduction,
 }: {
   githubAvailable: boolean
   googleAvailable: boolean
+  microsoftAvailable: boolean
   isProduction: boolean
 }) {
   return (
@@ -629,6 +634,7 @@ export default function SignupPage({
       <SignupFormContent
         githubAvailable={githubAvailable}
         googleAvailable={googleAvailable}
+        microsoftAvailable={microsoftAvailable}
         isProduction={isProduction}
       />
     </Suspense>

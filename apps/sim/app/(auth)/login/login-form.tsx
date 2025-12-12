@@ -91,10 +91,12 @@ const validatePassword = (passwordValue: string): string[] => {
 export default function LoginPage({
   githubAvailable,
   googleAvailable,
+  microsoftAvailable,
   isProduction,
 }: {
   githubAvailable: boolean
   googleAvailable: boolean
+  microsoftAvailable: boolean
   isProduction: boolean
 }) {
   const router = useRouter()
@@ -520,6 +522,7 @@ export default function LoginPage({
           <SocialLoginButtons
             googleAvailable={googleAvailable}
             githubAvailable={githubAvailable}
+            microsoftAvailable={microsoftAvailable}
             isProduction={isProduction}
             callbackURL={callbackUrl}
           >

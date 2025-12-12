@@ -8,5 +8,7 @@ export async function getOAuthProviderStatus() {
 
   const googleAvailable = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
 
-  return { githubAvailable, googleAvailable, isProduction: isProd }
+  const microsoftAvailable = !!(env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_TENANT_ID)
+
+  return { githubAvailable, googleAvailable, microsoftAvailable, isProduction: isProd }
 }

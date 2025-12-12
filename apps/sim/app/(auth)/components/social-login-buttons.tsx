@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReactNode, useEffect, useState } from 'react'
-import { GithubIcon, GoogleIcon } from '@/components/icons'
+import { GithubIcon, GoogleIcon, MicrosoftIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import { client } from '@/lib/auth/auth-client'
 import { inter } from '@/app/_styles/fonts/inter/inter'
@@ -9,6 +9,7 @@ import { inter } from '@/app/_styles/fonts/inter/inter'
 interface SocialLoginButtonsProps {
   githubAvailable: boolean
   googleAvailable: boolean
+  microsoftAvailable: boolean
   callbackURL?: string
   isProduction: boolean
   children?: ReactNode
@@ -17,12 +18,14 @@ interface SocialLoginButtonsProps {
 export function SocialLoginButtons({
   githubAvailable,
   googleAvailable,
+  microsoftAvailable,
   callbackURL = '/workspace',
   isProduction,
   children,
 }: SocialLoginButtonsProps) {
   const [isGithubLoading, setIsGithubLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   // Set mounted state to true on client-side
@@ -79,6 +82,29 @@ export function SocialLoginButtons({
     }
   }
 
+  async function signInWithMicrosoft() {
+    if (!microsoftAvailable) return
+
+    setIsMicrosoftLoading(true)
+    try {
+      await client.signIn.social({ provider: 'microsoft', callbackURL })
+    } catch (err: any) {
+      let errorMessage = 'Failed to sign in with Microsoft'
+
+      if (err.message?.includes('account exists')) {
+        errorMessage = 'An account with this email already exists. Please sign in instead.'
+      } else if (err.message?.includes('cancelled')) {
+        errorMessage = 'Microsoft sign in was cancelled. Please try again.'
+      } else if (err.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.'
+      } else if (err.message?.includes('rate limit')) {
+        errorMessage = 'Too many attempts. Please try again later.'
+      }
+    } finally {
+      setIsMicrosoftLoading(false)
+    }
+  }
+
   const githubButton = (
     <Button
       variant='outline'
@@ -103,7 +129,19 @@ export function SocialLoginButtons({
     </Button>
   )
 
-  const hasAnyOAuthProvider = githubAvailable || googleAvailable
+  const microsoftButton = (
+    <Button
+      variant='outline'
+      className='w-full rounded-[10px] shadow-sm hover:bg-gray-50'
+      disabled={!microsoftAvailable || isMicrosoftLoading}
+      onClick={signInWithMicrosoft}
+    >
+      <MicrosoftIcon className='!h-[18px] !w-[18px] mr-1' />
+      {isMicrosoftLoading ? 'Connecting...' : 'Microsoft'}
+    </Button>
+  )
+
+  const hasAnyOAuthProvider = githubAvailable || googleAvailable || microsoftAvailable
 
   if (!hasAnyOAuthProvider && !children) {
     return null
@@ -112,6 +150,7 @@ export function SocialLoginButtons({
   return (
     <div className={`${inter.className} grid gap-3 font-light`}>
       {googleAvailable && googleButton}
+      {microsoftAvailable && microsoftButton}
       {githubAvailable && githubButton}
       {children}
     </div>
