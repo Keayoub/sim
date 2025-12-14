@@ -38,13 +38,19 @@ import {
   handleSubscriptionCreated,
   handleSubscriptionDeleted,
 } from '@/lib/billing/webhooks/subscription'
-import { env, isTruthy } from '@/lib/core/config/env'
-import { isBillingEnabled, isEmailVerificationEnabled } from '@/lib/core/config/environment'
+import { env } from '@/lib/core/config/env'
+import {
+  isAuthDisabled,
+  isBillingEnabled,
+  isEmailVerificationEnabled,
+  isRegistrationDisabled,
+} from '@/lib/core/config/feature-flags'
 import { getBaseUrl } from '@/lib/core/utils/urls'
 import { createLogger } from '@/lib/logs/console/logger'
 import { sendEmail } from '@/lib/messaging/email/mailer'
 import { getFromEmailAddress } from '@/lib/messaging/email/utils'
 import { quickValidateEmail } from '@/lib/messaging/email/validation'
+import { createAnonymousSession, ensureAnonymousUserExists } from './anonymous'
 import { SSO_TRUSTED_PROVIDERS } from './sso/constants'
 
 const logger = createLogger('Auth')
@@ -222,6 +228,7 @@ export const auth = betterAuth({
         'pipedrive',
         'hubspot',
         'linkedin',
+        'spotify',
 
         // Common SSO provider patterns
         ...SSO_TRUSTED_PROVIDERS,
@@ -275,7 +282,7 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path.startsWith('/sign-up') && isTruthy(env.DISABLE_REGISTRATION))
+      if (ctx.path.startsWith('/sign-up') && isRegistrationDisabled)
         throw new Error('Registration is disabled, please contact your admin.')
 
       if (
@@ -1844,6 +1851,72 @@ export const auth = betterAuth({
           },
         },
 
+        // Spotify provider
+        {
+          providerId: 'spotify',
+          clientId: env.SPOTIFY_CLIENT_ID as string,
+          clientSecret: env.SPOTIFY_CLIENT_SECRET as string,
+          authorizationUrl: 'https://accounts.spotify.com/authorize',
+          tokenUrl: 'https://accounts.spotify.com/api/token',
+          userInfoUrl: 'https://api.spotify.com/v1/me',
+          scopes: [
+            'user-read-private',
+            'user-read-email',
+            'user-library-read',
+            'user-library-modify',
+            'playlist-read-private',
+            'playlist-read-collaborative',
+            'playlist-modify-public',
+            'playlist-modify-private',
+            'user-read-playback-state',
+            'user-modify-playback-state',
+            'user-read-currently-playing',
+            'user-read-recently-played',
+            'user-top-read',
+            'user-follow-read',
+            'user-follow-modify',
+            'user-read-playback-position',
+            'ugc-image-upload',
+          ],
+          responseType: 'code',
+          authentication: 'basic',
+          redirectURI: `${getBaseUrl()}/api/auth/oauth2/callback/spotify`,
+          getUserInfo: async (tokens) => {
+            try {
+              logger.info('Fetching Spotify user profile')
+
+              const response = await fetch('https://api.spotify.com/v1/me', {
+                headers: {
+                  Authorization: `Bearer ${tokens.accessToken}`,
+                },
+              })
+
+              if (!response.ok) {
+                logger.error('Failed to fetch Spotify user info', {
+                  status: response.status,
+                  statusText: response.statusText,
+                })
+                throw new Error('Failed to fetch user info')
+              }
+
+              const profile = await response.json()
+
+              return {
+                id: profile.id,
+                name: profile.display_name || 'Spotify User',
+                email: profile.email || `${profile.id}@spotify.user`,
+                emailVerified: true,
+                image: profile.images?.[0]?.url || undefined,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }
+            } catch (error) {
+              logger.error('Error in Spotify getUserInfo:', { error })
+              return null
+            }
+          },
+        },
+
         // WordPress.com provider
         {
           providerId: 'wordpress',
@@ -2026,14 +2099,6 @@ export const auth = betterAuth({
 
                 try {
                   await handleSubscriptionDeleted(subscription)
-
-                  // Reset usage limits to free tier
-                  await syncSubscriptionUsageLimits(subscription)
-
-                  logger.info('[onSubscriptionDeleted] Reset usage limits to free tier', {
-                    subscriptionId: subscription.id,
-                    referenceId: subscription.referenceId,
-                  })
                 } catch (error) {
                   logger.error('[onSubscriptionDeleted] Failed to handle subscription deletion', {
                     subscriptionId: subscription.id,
@@ -2132,6 +2197,11 @@ export const auth = betterAuth({
 })
 
 export async function getSession() {
+  if (isAuthDisabled) {
+    await ensureAnonymousUserExists()
+    return createAnonymousSession()
+  }
+
   const hdrs = await headers()
   return await auth.api.getSession({
     headers: hdrs,
