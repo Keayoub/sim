@@ -249,6 +249,12 @@ export const auth = betterAuth({
         'https://www.googleapis.com/auth/userinfo.profile',
       ],
     },
+    microsoft: {
+      clientId: env.MICROSOFT_CLIENT_ID as string,
+      clientSecret: env.MICROSOFT_CLIENT_SECRET as string,
+      tenantId: env.MICROSOFT_TENANT_ID as string,
+      scopes: ['openid', 'profile', 'email', 'User.Read'],
+    },
   },
   emailAndPassword: {
     enabled: true,

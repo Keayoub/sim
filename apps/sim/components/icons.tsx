@@ -861,6 +861,17 @@ export function GoogleIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function MicrosoftIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...props} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 23' width='24' height='24'>
+      <path fill='#f35325' d='M0 0h11v11H0z' />
+      <path fill='#81bc06' d='M12 0h11v11H12z' />
+      <path fill='#05a6f0' d='M0 12h11v11H0z' />
+      <path fill='#ffba08' d='M12 12h11v11H12z' />
+    </svg>
+  )
+}
+
 export function DiscordIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -1970,18 +1981,6 @@ export function ClayIcon(props: SVGProps<SVGSVGElement>) {
       C186.888184,159.951889 189.891830,155.971222 192.895477,151.990555   C192.895477,151.990555 192.993607,151.991669 193.307098,151.842606   
       C195.835999,149.785568 198.051407,147.877594 200.266830,145.969620  z'
       />
-    </svg>
-  )
-}
-
-export function MicrosoftIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 23' {...props}>
-      <path fill='#f3f3f3' d='M0 0h23v23H0z' />
-      <path fill='#f35325' d='M1 1h10v10H1z' />
-      <path fill='#81bc06' d='M12 1h10v10H12z' />
-      <path fill='#05a6f0' d='M1 12h10v10H1z' />
-      <path fill='#ffba08' d='M12 12h10v10H12z' />
     </svg>
   )
 }

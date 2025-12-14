@@ -4,12 +4,13 @@ import LoginForm from '@/app/(auth)/login/login-form'
 export const dynamic = 'force-dynamic'
 
 export default async function LoginPage() {
-  const { githubAvailable, googleAvailable, isProduction } = await getOAuthProviderStatus()
+  const { githubAvailable, googleAvailable, microsoftAvailable, isProduction } = await getOAuthProviderStatus()
 
   return (
     <LoginForm
       githubAvailable={githubAvailable}
       googleAvailable={googleAvailable}
+      microsoftAvailable={microsoftAvailable}
       isProduction={isProduction}
     />
   )
